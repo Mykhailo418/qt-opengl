@@ -24,15 +24,19 @@ link_directories(${QT_PATH}/bin)
 
 set(HEADERS_RPGEDITOR 
     mainwindow.h
+    OpenGLWidget.h
+    models/VertexData.h
 )
 
 set(SOURCES_RPGEDITOR
     main.cpp
     mainwindow.cpp
+    OpenGLWidget.cpp
 )
 
 set(MOC_RPGEDITOR
     moc_files/moc_mainwindow.cpp
+    moc_files/moc_OpenGLWidget.cpp
 )
 
 add_executable (${PROJECT_NAME}
