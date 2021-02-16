@@ -1,7 +1,7 @@
 #include "OpenGLWidget.h"
+#include "models/SimpleObject3D.h"
 
-OpenGLWidget::OpenGLWidget(QWidget* parent) : QOpenGLWidget(parent),
-    texture(0), indexBuffer(QOpenGLBuffer::IndexBuffer)
+OpenGLWidget::OpenGLWidget(QWidget* parent) : QOpenGLWidget(parent)
 {
     resize(800, 600);
     pathToShaders = qApp->applicationDirPath() + "/shaders";
@@ -19,73 +19,45 @@ void OpenGLWidget::initializeGL()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     setupShaders();
+
+
     initCube(1.0f);
+    objects[0]->translate(QVector3D(-1.2, 0.0, 0.0));
+    initCube(1.0f);
+    objects[1]->translate(QVector3D(1.2, 0.0, 0.0));
 }
 void OpenGLWidget::resizeGL(int w, int h)
 {
     float aspRatio = GLfloat(w) / (h ? GLfloat(h) : 1);
     matrixProjection.setToIdentity();
-    matrixProjection.perspective(zoom, aspRatio, 0.1f, 10.0f);
+    matrixProjection.perspective(zoom, aspRatio, 0.01f, 100.0f);
 }
 void OpenGLWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    QMatrix4x4 modelViewMatrix;
-    modelViewMatrix.setToIdentity();
-    modelViewMatrix.translate(0.0, 0.0, -5.0);
-    modelViewMatrix.rotate(30, 1.0, 0.0, 0.0);
-    modelViewMatrix.rotate(30, 0.0, 1.0, 0.0);
-    texture->bind(0);
+    QMatrix4x4 viewMatrix;
+    viewMatrix.setToIdentity();
+    viewMatrix.translate(0.0, 0.0, zCameraValue);
+    viewMatrix.rotate(rotation);
 
     defShaderProgram.bind();
-    defShaderProgram.setUniformValue("qt_ModelViewProjectionMatrix", matrixProjection * modelViewMatrix);
-    defShaderProgram.setUniformValue("qt_Texture0", 0);
+    defShaderProgram.setUniformValue("u_projectionMatrix", matrixProjection);
+    defShaderProgram.setUniformValue("u_viewMatrix", viewMatrix);
+    defShaderProgram.setUniformValue("u_lightPosition", QVector4D(0.0, 0.0, 0.0, 1.0));
+    defShaderProgram.setUniformValue("u_lightPower", 1.0f);
 
-    arrBuffer.bind();
-
-    int offset = 0;
-    int vertLoc = defShaderProgram.attributeLocation("qt_Vertex");
-    defShaderProgram.enableAttributeArray(vertLoc);
-    defShaderProgram.setAttributeBuffer(vertLoc, GL_FLOAT, offset, 3, sizeof(VertexData));
-
-    offset += sizeof(QVector3D);
-
-    int texLoc = defShaderProgram.attributeLocation("qt_MultiTexCoord0");
-    defShaderProgram.enableAttributeArray(texLoc);
-    defShaderProgram.setAttributeBuffer(texLoc, GL_FLOAT, offset, 2, sizeof(VertexData));
-
-    indexBuffer.bind();
-
-    glDrawElements(GL_TRIANGLES, indexBuffer.size(), GL_UNSIGNED_INT, 0);
+    for (int i = 0; i < objects.size(); i++) {
+        objects[i]->draw(&defShaderProgram, context()->functions());
+    }
 }
-
-static const char* vertexShaderSource =
-"attribute highp vec4 qt_Vertex;\n"
-"attribute highp vec2 qt_MultiTexCoord0;\n"
-"uniform highp mat4 qt_ModelViewProjectionMatrix;\n"
-"varying highp vec2 qt_TexCoord0;\n"
-"void main(void)\n"
-"{\n"
-"   gl_Position = qt_ModelViewProjectionMatrix * qt_Vertex;\n"
-"   qt_TexCoord0 = qt_MultiTexCoord0;\n"
-"}";
-
-static const char* fragmentShaderSource =
-"uniform sampler2D qt_Texture0;\n"
-"varying highp vec2 qt_TexCoord0;\n"
-"void main(void)\n"
-"{\n"
-"   gl_FragColor = texture2D(qt_Texture0, qt_TexCoord0);\n"
-//"   gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
-"}";
 
 void OpenGLWidget::setupShaders()
 {
-    if (!defShaderProgram.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource)) {
+    if (!defShaderProgram.addShaderFromSourceFile(QOpenGLShader::Vertex, pathToShaders + "/default.vsh")) {
         qDebug() << "Error loading default.vert shader\n";
         Q_ASSERT(nullptr);
     }
-    if (!defShaderProgram.addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShaderSource)) {
+    if (!defShaderProgram.addShaderFromSourceFile(QOpenGLShader::Fragment, pathToShaders + "/default.fsh")) {
         qDebug() << "Error loading default.frag shader\n";
         Q_ASSERT(nullptr);
     }
@@ -98,7 +70,7 @@ void OpenGLWidget::initCube(float width)
 {
     float halfWidth = width / 2;
     QVector<VertexData> verteces;
-    VertexData vertex11 = { QVector3D{ -halfWidth, halfWidth, halfWidth },QVector2D{ 0.0f, 1.0f },QVector3D{ 0.0f, 0.0f, 1.0f } };
+    VertexData vertex11 = { QVector3D{ -halfWidth, halfWidth, halfWidth }, QVector2D{ 0.0f, 1.0f },QVector3D{ 0.0f, 0.0f, 1.0f } };
     VertexData vertex12 = { QVector3D{ -halfWidth, -halfWidth, halfWidth }, QVector2D{ 0.0f, 0.0f },QVector3D{ 0.0f, 0.0f, 1.0f } };
     VertexData vertex13 = { QVector3D{ halfWidth, halfWidth, halfWidth }, QVector2D{ 1.0f, 1.0f }, QVector3D{ 0.0f, 0.0f, 1.0f } };
     VertexData vertex14 = { QVector3D{ halfWidth, -halfWidth, halfWidth },QVector2D{ 1.0f, 0.0f }, QVector3D{ 0.0f, 0.0f, 1.0f } };
@@ -164,18 +136,41 @@ void OpenGLWidget::initCube(float width)
         indexes.append(i + 3);
     }
 
-    arrBuffer.create();
-    arrBuffer.bind();
-    arrBuffer.allocate(verteces.constData(), verteces.size() * sizeof(VertexData));
-    arrBuffer.release();
+    objects.append(new SimpleObject3D(verteces, indexes, QImage("E:/cube.png")));
+}
 
-    indexBuffer.create();
-    indexBuffer.bind();
-    indexBuffer.allocate(indexes.constData(), indexes.size() * sizeof(GLuint));
-    indexBuffer.release();
+void OpenGLWidget::mousePressEvent(QMouseEvent* event)
+{
+    if (event->buttons() == Qt::LeftButton) {
+        mousePosition = QVector2D(event->localPos());
+    }
+    event->accept();
+}
 
-    texture = new QOpenGLTexture(QImage("E:/cube.png").mirrored());
-    texture->setMinificationFilter(QOpenGLTexture::Nearest);
-    texture->setMinificationFilter(QOpenGLTexture::Linear);
-    texture->setWrapMode(QOpenGLTexture::Repeat);
+void OpenGLWidget::mouseMoveEvent(QMouseEvent* event)
+{
+    if (event->buttons() != Qt::LeftButton) {
+        return;
+    }
+    QVector2D diff = QVector2D(event->localPos()) - mousePosition;
+    mousePosition = QVector2D(event->localPos());
+
+    float angle = diff.length() / 2.0;
+    QVector3D axis = QVector3D(diff.y(), diff.x(), 0.0); // axis of rottion
+
+    rotation = QQuaternion::fromAxisAndAngle(axis, angle) * rotation; // need * rotation in order to rotation calculate from previous rotation
+
+    update(); // run update to update scene
+}
+
+void OpenGLWidget::wheelEvent(QWheelEvent* event)
+{
+    if (event->delta() > 0) {
+        zCameraValue += 0.25f;
+    }
+    else if (event->delta() < 0) {
+        zCameraValue -= 0.25f;
+    }
+
+    update();
 }

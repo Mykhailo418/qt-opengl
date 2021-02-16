@@ -12,14 +12,14 @@
 
 #include "models/VertexData.h"
 
+class SimpleObject3D;
+
 class OpenGLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
     Q_OBJECT
 public:
     OpenGLWidget(QWidget* parent = nullptr);
     ~OpenGLWidget();
-
-    float zoom = 45.0f;
 
 public slots:
 
@@ -30,13 +30,19 @@ private:
     void setupShaders();
     void initCube(float width);
 
+    void mousePressEvent(QMouseEvent* event);
+    void mouseMoveEvent(QMouseEvent* event);
+    void wheelEvent(QWheelEvent* event);
+
+    float zoom = 45.0f;
+    float zCameraValue = -5.0f;
+
     QString pathToShaders;
     QMatrix4x4 matrixProjection;
     QOpenGLShaderProgram defShaderProgram;
-    QOpenGLTexture* texture;
-    QOpenGLBuffer arrBuffer;
-    QOpenGLBuffer indexBuffer;
-
+    QVector2D mousePosition;
+    QQuaternion rotation;
+    QVector<SimpleObject3D*> objects;
 };
 
 #endif // OPENGLWIDGET_H

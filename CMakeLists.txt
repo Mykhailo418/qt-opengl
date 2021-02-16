@@ -26,12 +26,14 @@ set(HEADERS_RPGEDITOR
     mainwindow.h
     OpenGLWidget.h
     models/VertexData.h
+    models/SimpleObject3D.h
 )
 
 set(SOURCES_RPGEDITOR
     main.cpp
     mainwindow.cpp
     OpenGLWidget.cpp
+    models/SimpleObject3D.cpp
 )
 
 set(MOC_RPGEDITOR
