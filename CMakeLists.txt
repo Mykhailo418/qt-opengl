@@ -27,6 +27,8 @@ set(HEADERS_RPGEDITOR
     OpenGLWidget.h
     models/VertexData.h
     models/SimpleObject3D.h
+    interfaces/transformational.h
+    models/Group3D.h
 )
 
 set(SOURCES_RPGEDITOR
@@ -34,6 +36,7 @@ set(SOURCES_RPGEDITOR
     mainwindow.cpp
     OpenGLWidget.cpp
     models/SimpleObject3D.cpp
+    models/Group3D.cpp
 )
 
 set(MOC_RPGEDITOR

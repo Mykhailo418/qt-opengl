@@ -53,8 +53,6 @@ void SimpleObject3D::init(const QVector<VertexData> &vertData, const QVector <GL
 	texture->setMinificationFilter(QOpenGLTexture::Nearest);
 	texture->setMinificationFilter(QOpenGLTexture::Linear);
 	texture->setWrapMode(QOpenGLTexture::Repeat);
-
-	matrixProjection.setToIdentity();
 }
 
 void SimpleObject3D::draw(QOpenGLShaderProgram* shaderProgram, QOpenGLFunctions* functions)
@@ -62,6 +60,12 @@ void SimpleObject3D::draw(QOpenGLShaderProgram* shaderProgram, QOpenGLFunctions*
 	if (!vertexBuffer.isCreated() || !indexBuffer.isCreated()) {
 		return;
 	}
+	QMatrix4x4 matrixProjection;
+	matrixProjection.setToIdentity();
+	matrixProjection.translate(translation);
+	matrixProjection.rotate(rotation);
+	matrixProjection.scale(scaling);
+	matrixProjection = globalTransformMatrix * matrixProjection;
 
 	texture->bind(0);
 	shaderProgram->setUniformValue("u_modelMatrix", matrixProjection);
@@ -95,7 +99,20 @@ void SimpleObject3D::draw(QOpenGLShaderProgram* shaderProgram, QOpenGLFunctions*
 	texture->release();
 }
 
-void SimpleObject3D::translate(const QVector3D& translateVector)
+void SimpleObject3D::translate(const QVector3D& t)
 {
-	matrixProjection.translate(translateVector);
+	translation += t;
+}
+
+void SimpleObject3D::rotate(const QQuaternion& r)
+{
+	rotation = r * rotation;
+}
+void SimpleObject3D::scale(const float& s)
+{
+	scaling *= s;
+}
+void SimpleObject3D::setGlobalTransform(const QMatrix4x4& g)
+{
+	globalTransformMatrix = g;
 }

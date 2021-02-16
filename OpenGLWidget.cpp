@@ -1,5 +1,7 @@
 #include "OpenGLWidget.h"
+#include "interfaces/transformational.h"
 #include "models/SimpleObject3D.h"
+#include "models/Group3D.h"
 
 OpenGLWidget::OpenGLWidget(QWidget* parent) : QOpenGLWidget(parent)
 {
@@ -20,11 +22,7 @@ void OpenGLWidget::initializeGL()
     glEnable(GL_CULL_FACE);
     setupShaders();
 
-
-    initCube(1.0f);
-    objects[0]->translate(QVector3D(-1.2, 0.0, 0.0));
-    initCube(1.0f);
-    objects[1]->translate(QVector3D(1.2, 0.0, 0.0));
+    generateCubes();
 }
 void OpenGLWidget::resizeGL(int w, int h)
 {
@@ -46,8 +44,8 @@ void OpenGLWidget::paintGL()
     defShaderProgram.setUniformValue("u_lightPosition", QVector4D(0.0, 0.0, 0.0, 1.0));
     defShaderProgram.setUniformValue("u_lightPower", 1.0f);
 
-    for (int i = 0; i < objects.size(); i++) {
-        objects[i]->draw(&defShaderProgram, context()->functions());
+    for (int i = 0; i < transformObjects.size(); i++) {
+        transformObjects[i]->draw(&defShaderProgram, context()->functions());
     }
 }
 
@@ -137,6 +135,39 @@ void OpenGLWidget::initCube(float width)
     }
 
     objects.append(new SimpleObject3D(verteces, indexes, QImage("E:/cube.png")));
+}
+
+void OpenGLWidget::generateCubes()
+{
+    float step = 2.0f;
+    groups.append(new Group3D);
+    for (float x = -step; x <= step; x += step) {
+        for (float y = -step; y <= step; y += step) {
+            for (float z = -step; z <= step; z += step) {
+                initCube(1.0f);
+                objects[objects.size() - 1]->translate(QVector3D(x, y, z));
+                groups[groups.size() - 1]->addObject(objects[objects.size() - 1]);
+            }
+        }
+    }
+    groups[0]->translate(QVector3D(-4.0f, 0.0f, 0.0f));
+
+    groups.append(new Group3D);
+    for (float x = -step; x <= step; x += step) {
+        for (float y = -step; y <= step; y += step) {
+            for (float z = -step; z <= step; z += step) {
+                initCube(1.0f);
+                objects[objects.size() - 1]->translate(QVector3D(x, y, z));
+                groups[groups.size() - 1]->addObject(objects[objects.size() - 1]);
+            }
+        }
+    }
+    groups[1]->translate(QVector3D(4.0f, 0.0f, 0.0f));
+
+    groups.append(new Group3D);
+    groups[2]->addObject(groups[0]);
+    groups[2]->addObject(groups[1]);
+    transformObjects.append(groups[2]);
 }
 
 void OpenGLWidget::mousePressEvent(QMouseEvent* event)

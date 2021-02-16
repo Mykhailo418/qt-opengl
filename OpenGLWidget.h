@@ -13,6 +13,8 @@
 #include "models/VertexData.h"
 
 class SimpleObject3D;
+class Transformational;
+class Group3D;
 
 class OpenGLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -29,6 +31,7 @@ private:
     void paintGL();
     void setupShaders();
     void initCube(float width);
+    void generateCubes();
 
     void mousePressEvent(QMouseEvent* event);
     void mouseMoveEvent(QMouseEvent* event);
@@ -43,6 +46,8 @@ private:
     QVector2D mousePosition;
     QQuaternion rotation;
     QVector<SimpleObject3D*> objects;
+    QVector<Transformational*> transformObjects;
+    QVector<Group3D*> groups;
 };
 
 #endif // OPENGLWIDGET_H
