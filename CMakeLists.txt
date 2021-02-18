@@ -29,6 +29,7 @@ set(HEADERS_RPGEDITOR
     models/SimpleObject3D.h
     interfaces/transformational.h
     models/Group3D.h
+    models/Camera3D.h
 )
 
 set(SOURCES_RPGEDITOR
@@ -37,6 +38,7 @@ set(SOURCES_RPGEDITOR
     OpenGLWidget.cpp
     models/SimpleObject3D.cpp
     models/Group3D.cpp
+    models/Camera3D.cpp
 )
 
 set(MOC_RPGEDITOR

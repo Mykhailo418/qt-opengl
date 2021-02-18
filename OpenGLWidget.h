@@ -9,12 +9,14 @@
 #include <gl/GL.h>
 #include <QOpenGLFunctions>
 #include <QMatrix4x4>
+#include <QBasicTimer>
 
 #include "models/VertexData.h"
 
 class SimpleObject3D;
 class Transformational;
 class Group3D;
+class Camera3D;
 
 class OpenGLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -36,18 +38,21 @@ private:
     void mousePressEvent(QMouseEvent* event);
     void mouseMoveEvent(QMouseEvent* event);
     void wheelEvent(QWheelEvent* event);
+    void timerEvent(QTimerEvent* event);
+    void keyPressEvent(QKeyEvent* event);
 
     float zoom = 45.0f;
-    float zCameraValue = -5.0f;
+    float angleObject = 0.0f;
 
     QString pathToShaders;
     QMatrix4x4 matrixProjection;
     QOpenGLShaderProgram defShaderProgram;
     QVector2D mousePosition;
-    QQuaternion rotation;
     QVector<SimpleObject3D*> objects;
     QVector<Transformational*> transformObjects;
     QVector<Group3D*> groups;
+    QBasicTimer timer;
+    Camera3D* camera;
 };
 
 #endif // OPENGLWIDGET_H

@@ -23,6 +23,8 @@ public:
 	void draw(QOpenGLShaderProgram* shaderProgram, QOpenGLFunctions* functions);
 
 	void addObject(Transformational* obj);
+	void deleteObject(Transformational* obj);
+	void deleteObject(const int &index);
 
 private:
 	QQuaternion rotation;

@@ -2,15 +2,31 @@
 #include "interfaces/transformational.h"
 #include "models/SimpleObject3D.h"
 #include "models/Group3D.h"
+#include "models/Camera3D.h"
 
 OpenGLWidget::OpenGLWidget(QWidget* parent) : QOpenGLWidget(parent)
 {
     resize(800, 600);
+    setFocusPolicy(Qt::StrongFocus);
     pathToShaders = qApp->applicationDirPath() + "/shaders";
+    camera = new Camera3D;
+    camera->translate(QVector3D(0.0f, 0.0f, -5.0f));
 }
 OpenGLWidget::~OpenGLWidget()
 {
     makeCurrent();
+
+    /*delete camera;
+    for (int i = 0; i < objects.size(); i++) {
+        delete objects[i];
+    }
+    for (int j = 0; j < transformObjects.size(); j++) {
+        delete transformObjects[j];
+    }
+    for (int k = 0; k < groups.size(); k++) {
+        delete groups[k];
+    }*/
+
     doneCurrent();
 }
 
@@ -33,16 +49,13 @@ void OpenGLWidget::resizeGL(int w, int h)
 void OpenGLWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    QMatrix4x4 viewMatrix;
-    viewMatrix.setToIdentity();
-    viewMatrix.translate(0.0, 0.0, zCameraValue);
-    viewMatrix.rotate(rotation);
 
     defShaderProgram.bind();
     defShaderProgram.setUniformValue("u_projectionMatrix", matrixProjection);
-    defShaderProgram.setUniformValue("u_viewMatrix", viewMatrix);
     defShaderProgram.setUniformValue("u_lightPosition", QVector4D(0.0, 0.0, 0.0, 1.0));
     defShaderProgram.setUniformValue("u_lightPower", 1.0f);
+
+    camera->draw(&defShaderProgram);
 
     for (int i = 0; i < transformObjects.size(); i++) {
         transformObjects[i]->draw(&defShaderProgram, context()->functions());
@@ -141,6 +154,7 @@ void OpenGLWidget::generateCubes()
 {
     float step = 2.0f;
     groups.append(new Group3D);
+ 
     for (float x = -step; x <= step; x += step) {
         for (float y = -step; y <= step; y += step) {
             for (float z = -step; z <= step; z += step) {
@@ -168,6 +182,8 @@ void OpenGLWidget::generateCubes()
     groups[2]->addObject(groups[0]);
     groups[2]->addObject(groups[1]);
     transformObjects.append(groups[2]);
+
+    timer.start(30, this);
 }
 
 void OpenGLWidget::mousePressEvent(QMouseEvent* event)
@@ -189,19 +205,54 @@ void OpenGLWidget::mouseMoveEvent(QMouseEvent* event)
     float angle = diff.length() / 2.0;
     QVector3D axis = QVector3D(diff.y(), diff.x(), 0.0); // axis of rottion
 
-    rotation = QQuaternion::fromAxisAndAngle(axis, angle) * rotation; // need * rotation in order to rotation calculate from previous rotation
+    camera->rotate(QQuaternion::fromAxisAndAngle(axis, angle));
 
     update(); // run update to update scene
 }
 
 void OpenGLWidget::wheelEvent(QWheelEvent* event)
 {
+    float step = 0.25f;
     if (event->delta() > 0) {
-        zCameraValue += 0.25f;
+        camera->translate(QVector3D(0.0f, 0.0f, step));
     }
     else if (event->delta() < 0) {
-        zCameraValue -= 0.25f;
+        camera->translate(QVector3D(0.0f, 0.0f, -step));
     }
 
+    update();
+}
+
+void OpenGLWidget::keyPressEvent(QKeyEvent* event)
+{
+    switch (event->key())
+    {
+    case Qt::Key_Left:
+        qDebug() << "left\n";
+        break;
+    case Qt::Key_Right:
+        qDebug() << "right\n";
+        break;
+    case Qt::Key_Up:
+        qDebug() << "up\n";
+        break;
+    case Qt::Key_Down:
+        qDebug() << "down\n";
+        break;
+    }
+    update();
+}
+
+void OpenGLWidget::timerEvent(QTimerEvent* event)
+{
+    for (int i = 0; i < objects.size(); i++) {
+        if (i % 2 == 0) {
+            objects[i]->rotate(QQuaternion::fromAxisAndAngle(QVector3D(1.0f, 0.0, 0.0), qSin(angleObject)));
+        }
+        else {
+            objects[i]->rotate(QQuaternion::fromAxisAndAngle(QVector3D(0.0f, 1.0, 0.0), qCos(angleObject)));
+        }
+    }
+    angleObject += M_PI / 100.0f;
     update();
 }
