@@ -30,6 +30,7 @@ set(HEADERS_RPGEDITOR
     interfaces/transformational.h
     models/Group3D.h
     models/Camera3D.h
+    models/SkyBox.h
 )
 
 set(SOURCES_RPGEDITOR
@@ -39,6 +40,7 @@ set(SOURCES_RPGEDITOR
     models/SimpleObject3D.cpp
     models/Group3D.cpp
     models/Camera3D.cpp
+    models/SkyBox.cpp
 )
 
 set(MOC_RPGEDITOR
@@ -50,7 +52,7 @@ add_executable (${PROJECT_NAME}
     ${MOC_RPGEDITOR}
     ${HEADERS_RPGEDITOR}
     ${SOURCES_RPGEDITOR}
-)
+ )
 
 target_link_libraries(${PROJECT_NAME}
   PUBLIC

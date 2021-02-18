@@ -17,6 +17,7 @@ class SimpleObject3D;
 class Transformational;
 class Group3D;
 class Camera3D;
+class SkyBox;
 
 class OpenGLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -47,12 +48,14 @@ private:
     QString pathToShaders;
     QMatrix4x4 matrixProjection;
     QOpenGLShaderProgram defShaderProgram;
+    QOpenGLShaderProgram skyboxShaderProgram;
     QVector2D mousePosition;
     QVector<SimpleObject3D*> objects;
     QVector<Transformational*> transformObjects;
     QVector<Group3D*> groups;
     QBasicTimer timer;
     Camera3D* camera;
+    SkyBox* skybox;
 };
 
 #endif // OPENGLWIDGET_H

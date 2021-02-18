@@ -3,6 +3,7 @@
 #include "models/SimpleObject3D.h"
 #include "models/Group3D.h"
 #include "models/Camera3D.h"
+#include "models/SkyBox.h"
 
 OpenGLWidget::OpenGLWidget(QWidget* parent) : QOpenGLWidget(parent)
 {
@@ -39,16 +40,25 @@ void OpenGLWidget::initializeGL()
     setupShaders();
 
     generateCubes();
+    skybox = new SkyBox(100, QImage("E:/Downloads/skybox.png"));
+    timer.start(30, this);
 }
 void OpenGLWidget::resizeGL(int w, int h)
 {
     float aspRatio = GLfloat(w) / (h ? GLfloat(h) : 1);
     matrixProjection.setToIdentity();
-    matrixProjection.perspective(zoom, aspRatio, 0.01f, 100.0f);
+    matrixProjection.perspective(zoom, aspRatio, 0.01f, 1000.0f);
 }
 void OpenGLWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    skyboxShaderProgram.bind();
+    skyboxShaderProgram.setUniformValue("u_projectionMatrix", matrixProjection);
+
+    camera->draw(&skyboxShaderProgram);
+    skybox->draw(&skyboxShaderProgram, context()->functions());
+    skyboxShaderProgram.release();
 
     defShaderProgram.bind();
     defShaderProgram.setUniformValue("u_projectionMatrix", matrixProjection);
@@ -60,6 +70,7 @@ void OpenGLWidget::paintGL()
     for (int i = 0; i < transformObjects.size(); i++) {
         transformObjects[i]->draw(&defShaderProgram, context()->functions());
     }
+    defShaderProgram.release();
 }
 
 void OpenGLWidget::setupShaders()
@@ -73,6 +84,18 @@ void OpenGLWidget::setupShaders()
         Q_ASSERT(nullptr);
     }
     if (!defShaderProgram.link()) {
+        qDebug() << "Error Linking Default Shader\n";
+    }
+
+    if (!skyboxShaderProgram.addShaderFromSourceFile(QOpenGLShader::Vertex, pathToShaders + "/skybox.vsh")) {
+        qDebug() << "Error loading default.vert shader\n";
+        Q_ASSERT(nullptr);
+    }
+    if (!skyboxShaderProgram.addShaderFromSourceFile(QOpenGLShader::Fragment, pathToShaders + "/skybox.fsh")) {
+        qDebug() << "Error loading default.frag shader\n";
+        Q_ASSERT(nullptr);
+    }
+    if (!skyboxShaderProgram.link()) {
         qDebug() << "Error Linking Default Shader\n";
     }
 }
@@ -182,8 +205,6 @@ void OpenGLWidget::generateCubes()
     groups[2]->addObject(groups[0]);
     groups[2]->addObject(groups[1]);
     transformObjects.append(groups[2]);
-
-    timer.start(30, this);
 }
 
 void OpenGLWidget::mousePressEvent(QMouseEvent* event)
