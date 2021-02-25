@@ -1,9 +1,13 @@
+#include <iostream>
 #include "OpenGLWidget.h"
 #include "interfaces/transformational.h"
 #include "models/SimpleObject3D.h"
+#include "models/ObjectEngine3D.h"
 #include "models/Group3D.h"
 #include "models/Camera3D.h"
 #include "models/SkyBox.h"
+#include "interfaces/IndexesMode.h"
+#include "models/Material.h"
 
 OpenGLWidget::OpenGLWidget(QWidget* parent) : QOpenGLWidget(parent)
 {
@@ -39,15 +43,20 @@ void OpenGLWidget::initializeGL()
     glEnable(GL_CULL_FACE);
     setupShaders();
 
-    generateCubes();
-    skybox = new SkyBox(100, QImage("E:/Downloads/skybox.png"));
+    //generateCubes();
+    objects.append(new ObjectEngine3D);
+    //objects[objects.size() - 1]->loadObjectFromFile("E:/SweetDreams/3dModels/obj/85-cottage_obj/cottage_obj.obj");
+    //objects[objects.size() - 1]->loadObjectFromFile("E:/SweetDreams/3dModels/obj/female/female_3dmax.obj");
+    //objects[objects.size() - 1]->loadObjectFromFile("E:/SweetDreams/dev/svn/trunk/3rdparty/QT-3D-Model-Viewer/QT3DModelViewer/Models/Patrick/Patrick.obj");
+    transformObjects.append(objects[objects.size() - 1]);
+    skybox = new SkyBox(600, QImage("E:/Downloads/skybox.png"));
     timer.start(30, this);
 }
 void OpenGLWidget::resizeGL(int w, int h)
 {
     float aspRatio = GLfloat(w) / (h ? GLfloat(h) : 1);
     matrixProjection.setToIdentity();
-    matrixProjection.perspective(zoom, aspRatio, 0.01f, 1000.0f);
+    matrixProjection.perspective(zoom, aspRatio, 0.01f, 2000.0f);
 }
 void OpenGLWidget::paintGL()
 {
@@ -170,7 +179,17 @@ void OpenGLWidget::initCube(float width)
         indexes.append(i + 3);
     }
 
-    objects.append(new SimpleObject3D(verteces, indexes, QImage("E:/cube.png")));
+    Material* newMtl = new Material;
+    newMtl->setDiffuseMap("E:/cube.png");
+    newMtl->setShinnes(96);
+    newMtl->setDiffuseColor(QVector3D(1.0, 1.0, 1.0));
+    newMtl->setAmbienceColor(QVector3D(1.0, 1.0, 1.0));
+    newMtl->setSpecularColor(QVector3D(1.0, 1.0, 1.0));
+
+    /*ObjectEngine3D* objectEngine = new ObjectEngine3D;
+    objectEngine->addObject(new SimpleObject3D(verteces, indexes, newMtl));
+
+    objects.append(objectEngine);*/
 }
 
 void OpenGLWidget::generateCubes()
@@ -233,7 +252,7 @@ void OpenGLWidget::mouseMoveEvent(QMouseEvent* event)
 
 void OpenGLWidget::wheelEvent(QWheelEvent* event)
 {
-    float step = 0.25f;
+    float step = 5.25f;
     if (event->delta() > 0) {
         camera->translate(QVector3D(0.0f, 0.0f, step));
     }
@@ -266,7 +285,7 @@ void OpenGLWidget::keyPressEvent(QKeyEvent* event)
 
 void OpenGLWidget::timerEvent(QTimerEvent* event)
 {
-    for (int i = 0; i < objects.size(); i++) {
+    for (int i = 0; i < objects.size() - 1; i++) {
         if (i % 2 == 0) {
             objects[i]->rotate(QQuaternion::fromAxisAndAngle(QVector3D(1.0f, 0.0, 0.0), qSin(angleObject)));
         }
@@ -276,4 +295,16 @@ void OpenGLWidget::timerEvent(QTimerEvent* event)
     }
     angleObject += M_PI / 100.0f;
     update();
+}
+
+
+GLenum OpenGLWidget::getDrawMode(int vertecesCount)
+{
+    if (vertecesCount == 3) {
+        return GL_TRIANGLES;
+    }
+    else if (vertecesCount == 4) {
+        return GL_QUADS;
+    }
+    return GL_POLYGON;
 }

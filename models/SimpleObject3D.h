@@ -15,15 +15,18 @@
 #include <QVector3D>
 
 #include "VertexData.h"
+#include "interfaces/IndexesMode.h"
+
+class Material;
 
 class SimpleObject3D : public Transformational
 {
 public:
 	SimpleObject3D();
-	SimpleObject3D(const QVector<VertexData> &vertData, const QVector <GLuint> &indexes, const QImage &textureImg);
+	SimpleObject3D(const QVector<VertexData> &vertData, const QVector <GLuint> &indexes, Material* materialObj, const QVector<IndexesMode> &modes);
 	~SimpleObject3D();
 
-	void init(const QVector<VertexData> &vertData, const QVector <GLuint> &indexes, const QImage &textureImg);
+	void init(const QVector<VertexData> &vertData, const QVector <GLuint> &indexes, Material* materialObj, const QVector<IndexesMode> &modes);
 	void rotate(const QQuaternion& r);
 	void translate(const QVector3D& t);
 	void scale(const float& s);
@@ -39,6 +42,8 @@ private:
 	QVector3D translation;
 	float scaling = 1.0f;
 	QMatrix4x4 globalTransformMatrix;
+	QVector<IndexesMode> listIndexeModes;
+	Material* material;
 };
 
 #endif // SIMPLE_OBJECT_3D_H

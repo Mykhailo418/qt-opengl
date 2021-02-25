@@ -18,6 +18,7 @@ class Transformational;
 class Group3D;
 class Camera3D;
 class SkyBox;
+class ObjectEngine3D;
 
 class OpenGLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -35,6 +36,7 @@ private:
     void setupShaders();
     void initCube(float width);
     void generateCubes();
+    GLenum getDrawMode(int vertecesCount);
 
     void mousePressEvent(QMouseEvent* event);
     void mouseMoveEvent(QMouseEvent* event);
@@ -50,7 +52,7 @@ private:
     QOpenGLShaderProgram defShaderProgram;
     QOpenGLShaderProgram skyboxShaderProgram;
     QVector2D mousePosition;
-    QVector<SimpleObject3D*> objects;
+    QVector<ObjectEngine3D*> objects;
     QVector<Transformational*> transformObjects;
     QVector<Group3D*> groups;
     QBasicTimer timer;

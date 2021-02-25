@@ -28,9 +28,13 @@ set(HEADERS_RPGEDITOR
     models/VertexData.h
     models/SimpleObject3D.h
     interfaces/transformational.h
+    interfaces/IndexesMode.h
     models/Group3D.h
     models/Camera3D.h
     models/SkyBox.h
+    models/Material.h
+    models/MaterialLibrary.h
+    models/ObjectEngine3D.h
 )
 
 set(SOURCES_RPGEDITOR
@@ -41,6 +45,9 @@ set(SOURCES_RPGEDITOR
     models/Group3D.cpp
     models/Camera3D.cpp
     models/SkyBox.cpp
+    models/Material.cpp
+    models/MaterialLibrary.cpp
+    models/ObjectEngine3D.cpp
 )
 
 set(MOC_RPGEDITOR
@@ -52,7 +59,7 @@ add_executable (${PROJECT_NAME}
     ${MOC_RPGEDITOR}
     ${HEADERS_RPGEDITOR}
     ${SOURCES_RPGEDITOR}
- )
+)
 
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
@@ -108,6 +115,12 @@ add_custom_command(
 
 add_custom_command(
         TARGET ${PROJECT_NAME} PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${QT_PATH}/bin/libGLESv2d.dll
+                ${CMAKE_CURRENT_BINARY_DIR} )
+
+add_custom_command(
+        TARGET ${PROJECT_NAME} PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/platforms )
 
  add_custom_command(
@@ -121,3 +134,9 @@ add_custom_command(
         COMMAND ${CMAKE_COMMAND} -E copy_directory
                 ${CMAKE_CURRENT_SOURCE_DIR}/shaders
                 ${CMAKE_CURRENT_BINARY_DIR}/shaders )
+
+add_custom_command(
+        TARGET ${PROJECT_NAME} PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${QT_PATH}/plugins/imageformats
+                ${CMAKE_CURRENT_BINARY_DIR}/imageformats )

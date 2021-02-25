@@ -1,14 +1,16 @@
 #include "SimpleObject3D.h"
+#include <iostream>
+#include "Material.h"
 
 SimpleObject3D::SimpleObject3D() : indexBuffer(QOpenGLBuffer::IndexBuffer), texture(0)
 {
 
 }
 
-SimpleObject3D::SimpleObject3D(const QVector<VertexData> &vertData, const QVector <GLuint> &indexes, const QImage &textureImg)
+SimpleObject3D::SimpleObject3D(const QVector<VertexData> &vertData, const QVector <GLuint> &indexes, Material* materialObj, const QVector<IndexesMode> &modes)
 	: indexBuffer(QOpenGLBuffer::IndexBuffer)
 {
-	init(vertData, indexes, textureImg);
+	init(vertData, indexes, materialObj, modes);
 }
 
 SimpleObject3D::~SimpleObject3D()
@@ -24,8 +26,9 @@ SimpleObject3D::~SimpleObject3D()
 	}
 }
 
-void SimpleObject3D::init(const QVector<VertexData> &vertData, const QVector <GLuint> &indexes, const QImage &textureImg)
+void SimpleObject3D::init(const QVector<VertexData> &vertData, const QVector <GLuint> &indexes, Material* materialObj, const QVector<IndexesMode> &modes)
 {
+	listIndexeModes = modes;
 	if (vertexBuffer.isCreated()) {
 		vertexBuffer.destroy();
 	}
@@ -49,7 +52,20 @@ void SimpleObject3D::init(const QVector<VertexData> &vertData, const QVector <GL
 	indexBuffer.allocate(indexes.constData(), indexes.size() * sizeof(GLuint));
 	indexBuffer.release();
 
-	texture = new QOpenGLTexture(textureImg.mirrored());
+	material = materialObj;
+	QImage textureImg;
+	qDebug() << material->mtlName();
+	if (material) {
+		textureImg = material->diffuseMap().mirrored();
+	}
+	else {
+		textureImg = QImage(1, 1, QImage::Format_RGB32);
+		QRgb value;
+		value = qRgb(200, 200, 200);
+		textureImg.setPixel(0, 0, value);
+	}
+
+	texture = new QOpenGLTexture(textureImg);
 	texture->setMinificationFilter(QOpenGLTexture::Nearest);
 	texture->setMinificationFilter(QOpenGLTexture::Linear);
 	texture->setWrapMode(QOpenGLTexture::Repeat);
@@ -60,6 +76,9 @@ void SimpleObject3D::draw(QOpenGLShaderProgram* shaderProgram, QOpenGLFunctions*
 	if (!vertexBuffer.isCreated() || !indexBuffer.isCreated()) {
 		return;
 	}
+	texture->bind(0);
+	shaderProgram->setUniformValue("u_texture", 0);
+
 	QMatrix4x4 matrixProjection;
 	matrixProjection.setToIdentity();
 	matrixProjection.translate(translation);
@@ -67,9 +86,12 @@ void SimpleObject3D::draw(QOpenGLShaderProgram* shaderProgram, QOpenGLFunctions*
 	matrixProjection.scale(scaling);
 	matrixProjection = globalTransformMatrix * matrixProjection;
 
-	texture->bind(0);
 	shaderProgram->setUniformValue("u_modelMatrix", matrixProjection);
-	shaderProgram->setUniformValue("u_texture", 0);
+	shaderProgram->setUniformValue("u_materialProperty.diffuseColor", material->diffuseColor());
+	shaderProgram->setUniformValue("u_materialProperty.ambienceColor", material->ambienceColor());
+	shaderProgram->setUniformValue("u_materialProperty.specularColor", material->specularColor());
+	shaderProgram->setUniformValue("u_materialProperty.shinnes", material->shinnes());
+	shaderProgram->setUniformValue("u_isUsingDiffuseMap", material->isDiffMapUsed());
 
 	vertexBuffer.bind();
 
@@ -91,8 +113,21 @@ void SimpleObject3D::draw(QOpenGLShaderProgram* shaderProgram, QOpenGLFunctions*
 	shaderProgram->setAttributeBuffer(normalLoc, GL_FLOAT, offset, 3, sizeof(VertexData));
 
 	indexBuffer.bind();
+	//if (listIndexeModes.size() > 1) {
+	//	for (IndexesMode indMode : listIndexeModes) {
+	//		functions->glDrawArrays(indMode.mode, indMode.indexes[0], indMode.indexes.size());
+	//	}
+	//}
+	//else {
+	//	functions->glDrawArrays(listIndexeModes[0].mode, listIndexeModes[0].indexes[0], listIndexeModes[0].indexes.size());
+	//	//functions->glDrawElements(listIndexeModes[0].mode, indexBuffer.size(), GL_UNSIGNED_INT, 0);
+	//}
 
-	functions->glDrawElements(GL_TRIANGLES, indexBuffer.size(), GL_UNSIGNED_INT, 0);
+	/*for (IndexesMode indMode : listIndexeModes) {
+		functions->glDrawArrays(indMode.mode, indMode.indexes[0], indMode.indexes.size());
+	}*/
+	functions->glDrawArrays(GL_TRIANGLES, 0, indexBuffer.size());
+	//functions->glDrawElements(GL_TRIANGLES, indexBuffer.size(), GL_UNSIGNED_INT, 0);
 
 	vertexBuffer.release();
 	indexBuffer.release();

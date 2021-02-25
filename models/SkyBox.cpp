@@ -1,5 +1,6 @@
 #include "SkyBox.h"
 #include "SimpleObject3D.h"
+#include "Material.h"
 
 SkyBox::SkyBox(float width, QImage &textureImg)
 {
@@ -91,6 +92,8 @@ void SkyBox::initCube(float width, QImage& textureImg)
     verteces.append(vertex64);
 
     QVector<GLuint> indexes;
+    QVector<IndexesMode> listIndexeModes;
+    listIndexeModes.append(IndexesMode{ GL_TRIANGLES, QVector<GLuint>{} });
     for (int i = 0; i < 24; i += 4) {
         indexes.append(i + 0);
         indexes.append(i + 2);
@@ -98,7 +101,20 @@ void SkyBox::initCube(float width, QImage& textureImg)
         indexes.append(i + 2);
         indexes.append(i + 3);
         indexes.append(i + 1);
+        listIndexeModes[0].indexes.append(i + 0);
+        listIndexeModes[0].indexes.append(i + 2);
+        listIndexeModes[0].indexes.append(i + 1);
+        listIndexeModes[0].indexes.append(i + 2);
+        listIndexeModes[0].indexes.append(i + 3);
+        listIndexeModes[0].indexes.append(i + 1);
     }
 
-    cube = new SimpleObject3D(verteces, indexes, textureImg);
+    Material* newMtl = new Material;
+    newMtl->setDiffuseMap(textureImg);
+    newMtl->setShinnes(96);
+    newMtl->setDiffuseColor(QVector3D(1.0, 1.0, 1.0));
+    newMtl->setAmbienceColor(QVector3D(1.0, 1.0, 1.0));
+    newMtl->setSpecularColor(QVector3D(1.0, 1.0, 1.0));
+
+    cube = new SimpleObject3D(verteces, indexes, newMtl, listIndexeModes);
 }
