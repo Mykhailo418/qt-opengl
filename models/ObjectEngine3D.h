@@ -20,6 +20,7 @@ public:
 	void scale(const float& s);
 	void setGlobalTransform(const QMatrix4x4& g);
 	void draw(QOpenGLShaderProgram* shaderProgram, QOpenGLFunctions* functions);
+	void calculateTBN(QVector<VertexData> &vertecesData);
 
 private:
 	QVector<SimpleObject3D*> objects;

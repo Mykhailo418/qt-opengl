@@ -33,7 +33,7 @@ void ObjectEngine3D::loadObjectFromFile(const QString& filename)
 
     while (!input.atEnd()) {
         QString str = input.readLine();
-        qDebug() << str;
+        //qDebug() << str;
         QStringList list = str.split(" ");
         list.removeAll("");
        /* QStringList list;
@@ -106,6 +106,7 @@ void ObjectEngine3D::loadObjectFromFile(const QString& filename)
         }
         else if (list[0] == "usemtl") {
             if (object) {
+                calculateTBN(verteces);
                 object->init(verteces, indexes, materialLibrary.getMaterial(mtlName), listIndexeModes);
             }
             mtlName = list[1];
@@ -117,10 +118,10 @@ void ObjectEngine3D::loadObjectFromFile(const QString& filename)
         }
     }
     if (object) {
+        calculateTBN(verteces);
         object->init(verteces, indexes, materialLibrary.getMaterial(mtlName), listIndexeModes);
     }
     addObject(object);
-    qDebug() << "Object Engine file close";
     objFile.close();
 }
 void ObjectEngine3D::addObject(SimpleObject3D* object)
@@ -184,5 +185,43 @@ void ObjectEngine3D::draw(QOpenGLShaderProgram* shaderProgram, QOpenGLFunctions*
 {
     for (int i = 0; i < objects.size(); i++) {
         objects[i]->draw(shaderProgram, functions);
+    }
+}
+
+void ObjectEngine3D::calculateTBN(QVector<VertexData>& vertecesData)
+{
+    // only for trianlge polygons
+    for (int i = 0; i < vertecesData.size(); i += 3) {
+        if (i + 3 > vertecesData.size()) {
+            break;
+        }
+        QVector3D& v1 = vertecesData[i].position;
+        QVector3D& v2 = vertecesData[i+1].position;
+        QVector3D& v3 = vertecesData[i+2].position;
+
+        QVector2D& uv1 = vertecesData[i].texCoord;
+        QVector2D& uv2 = vertecesData[i + 1].texCoord;
+        QVector2D& uv3 = vertecesData[i + 2].texCoord;
+
+        // deltaPos1 = deltaUV1.x * Tangent + deltaUV1.y * Bitangent;
+        // deltaPos2 = deltaUV2.x * Tangent + deltaUV2.y * Bitangent;
+
+        QVector3D deltaPos1 = v2 - v1;
+        QVector3D deltaPos2 = v3 - v1;
+
+        QVector2D deltaUV1 = uv2 - uv1;
+        QVector2D deltaUV2 = uv3 - uv1;
+
+        float r = 1.0f / (deltaUV1.x() * deltaUV2.y() - deltaUV1.y() * deltaUV2.x());
+        QVector3D tangent = (deltaPos1 * deltaUV2.y() - deltaPos2 * deltaUV1.y()) * r;
+        QVector3D bitangent = (deltaPos2 * deltaUV1.x() - deltaPos1 * deltaUV2.x()) * r;
+
+        vertecesData[i].tangent = tangent;
+        vertecesData[i + 1].tangent = tangent;
+        vertecesData[i + 2].tangent = tangent;
+
+        vertecesData[i].bitangent = bitangent;
+        vertecesData[i + 1].bitangent = bitangent;
+        vertecesData[i + 2].bitangent = bitangent;
     }
 }

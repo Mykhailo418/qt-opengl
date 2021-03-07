@@ -13,6 +13,8 @@ struct VertexData
     QVector3D position;
     QVector2D texCoord;
     QVector3D normal;
+    QVector3D tangent;
+    QVector3D bitangent;
 };
 
 #endif // VERTEX_DATA_H

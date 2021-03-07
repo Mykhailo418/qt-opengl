@@ -48,15 +48,17 @@ void OpenGLWidget::initializeGL()
     //objects[objects.size() - 1]->loadObjectFromFile("E:/SweetDreams/3dModels/obj/85-cottage_obj/cottage_obj.obj");
     //objects[objects.size() - 1]->loadObjectFromFile("E:/SweetDreams/3dModels/obj/female/female_3dmax.obj");
     //objects[objects.size() - 1]->loadObjectFromFile("E:/SweetDreams/dev/svn/trunk/3rdparty/QT-3D-Model-Viewer/QT3DModelViewer/Models/Patrick/Patrick.obj");
+    //objects[objects.size() - 1]->loadObjectFromFile("E:/SweetDreams/3dModels/obj/castle/Castle OBJ.obj");
+    objects[objects.size() - 1]->loadObjectFromFile("E:/SweetDreams/3dModels/fbx/45-cottage/Cottage_FREE2.obj");
     transformObjects.append(objects[objects.size() - 1]);
-    skybox = new SkyBox(600, QImage("E:/Downloads/skybox.png"));
+    skybox = new SkyBox(2000, QImage("E:/Downloads/skybox.png"));
     timer.start(30, this);
 }
 void OpenGLWidget::resizeGL(int w, int h)
 {
     float aspRatio = GLfloat(w) / (h ? GLfloat(h) : 1);
     matrixProjection.setToIdentity();
-    matrixProjection.perspective(zoom, aspRatio, 0.01f, 2000.0f);
+    matrixProjection.perspective(zoom, aspRatio, 0.01f, 3000.0f);
 }
 void OpenGLWidget::paintGL()
 {
@@ -72,7 +74,7 @@ void OpenGLWidget::paintGL()
     defShaderProgram.bind();
     defShaderProgram.setUniformValue("u_projectionMatrix", matrixProjection);
     defShaderProgram.setUniformValue("u_lightPosition", QVector4D(0.0, 0.0, 0.0, 1.0));
-    defShaderProgram.setUniformValue("u_lightPower", 1.0f);
+    defShaderProgram.setUniformValue("u_lightPower", 2.0f);
 
     camera->draw(&defShaderProgram);
 

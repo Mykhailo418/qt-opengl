@@ -24,6 +24,10 @@ public:
 	void setDiffuseMap(const QImage& image);
 	const QImage& diffuseMap() const;
 	bool isDiffMapUsed() const;
+	void setNormalMap(const QString& filename);
+	void setNormalMap(const QImage& image);
+	const QImage& normalMap() const;
+	bool isNormalMapUsed() const;
 
 private:
 	QString _mtlName;
@@ -32,7 +36,9 @@ private:
 	QVector3D _specularColor;
 	float _shinnes;
 	QImage _diffuseMap;
+	QImage _normalMap;
 	bool _isDiffMapUsed = false;
+	bool _isNormalMapUsed = false;
 };
 
 #endif // MATERIAL_H

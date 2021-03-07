@@ -36,7 +36,8 @@ public:
 private:
 	QOpenGLBuffer vertexBuffer;
 	QOpenGLBuffer indexBuffer;
-	QOpenGLTexture* texture;
+	QOpenGLTexture* diffuseMap;
+	QOpenGLTexture* normalMap;
 
 	QQuaternion rotation;
 	QVector3D translation;

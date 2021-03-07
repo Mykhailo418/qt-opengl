@@ -6,8 +6,6 @@
 #include <QFileInfo>
 #include "Material.h"
 
-const QString whiteSpaceSymbol = " ";
-
 MaterialLibrary::MaterialLibrary()
 {
 
@@ -100,19 +98,26 @@ void MaterialLibrary::loadMaterialsFromFile(const QString& mtlFilename)
 					fileName = list[i];
 				}
 				else {
-					fileName += whiteSpaceSymbol + list[i];
+					fileName += " " + list[i];
 				}
 			}
-			if (fileName.contains("/") || fileName.contains("\\")) {
-				newMtl->setDiffuseMap(fileName);
-			}
-			else {
-				newMtl->setDiffuseMap(
-					QString("%1/%2")
+			if (!fileName.contains("/") && !fileName.contains("\\")) {
+				fileName = QString("%1/%2")
 					.arg(fileInfo.absolutePath())
-					.arg(fileName)
-				);
+					.arg(fileName);
 			}
+			//qDebug() << fileName;
+			newMtl->setDiffuseMap(fileName);
+		}
+		else if (list[0] == "bump" || list[0] == "map_Bump") {
+			QString fileName = list[1];
+			if (!fileName.contains("/") && !fileName.contains("\\")) {
+				fileName = QString("%1/%2")
+					.arg(fileInfo.absolutePath())
+					.arg(fileName);
+			}
+			//qDebug() << fileName;
+			newMtl->setNormalMap(fileName);
 		}
 	}
 	addMaterial(newMtl);

@@ -52,6 +52,7 @@ const float& Material::shinnes() const
 }
 void Material::setDiffuseMap(const QString& filename)
 {
+	qDebug() << filename;
 	QImage image;
 	image.load(filename);
 	_diffuseMap = image;
@@ -69,4 +70,25 @@ const QImage& Material::diffuseMap() const
 bool Material::isDiffMapUsed() const
 {
 	return _isDiffMapUsed;
+}
+void Material::setNormalMap(const QString& filename)
+{
+	qDebug() << filename;
+	QImage image;
+	image.load(filename);
+	_normalMap = image;
+	_isNormalMapUsed = true;
+}
+void Material::setNormalMap(const QImage& image)
+{
+	_normalMap = image;
+	_isNormalMapUsed = true;
+}
+const QImage& Material::normalMap() const
+{
+	return _normalMap;
+}
+bool Material::isNormalMapUsed() const
+{
+	return _isNormalMapUsed;
 }

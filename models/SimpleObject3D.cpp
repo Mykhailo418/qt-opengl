@@ -2,7 +2,7 @@
 #include <iostream>
 #include "Material.h"
 
-SimpleObject3D::SimpleObject3D() : indexBuffer(QOpenGLBuffer::IndexBuffer), texture(0)
+SimpleObject3D::SimpleObject3D() : indexBuffer(QOpenGLBuffer::IndexBuffer), diffuseMap(0)
 {
 
 }
@@ -21,8 +21,8 @@ SimpleObject3D::~SimpleObject3D()
 	if (indexBuffer.isCreated()) {
 		indexBuffer.destroy();
 	}
-	if (texture != 0 && texture->isCreated()) {
-		texture->destroy();
+	if (diffuseMap != 0 && diffuseMap->isCreated()) {
+		diffuseMap->destroy();
 	}
 }
 
@@ -52,10 +52,10 @@ void SimpleObject3D::init(const QVector<VertexData> &vertData, const QVector <GL
 	indexBuffer.allocate(indexes.constData(), indexes.size() * sizeof(GLuint));
 	indexBuffer.release();
 
-	material = materialObj;
+	material = materialObj ? materialObj : new Material();
 	QImage textureImg;
-	qDebug() << material->mtlName();
-	if (material) {
+	if (material->isDiffMapUsed()) {
+		qDebug() << material->mtlName();
 		textureImg = material->diffuseMap().mirrored();
 	}
 	else {
@@ -65,10 +65,18 @@ void SimpleObject3D::init(const QVector<VertexData> &vertData, const QVector <GL
 		textureImg.setPixel(0, 0, value);
 	}
 
-	texture = new QOpenGLTexture(textureImg);
-	texture->setMinificationFilter(QOpenGLTexture::Nearest);
-	texture->setMinificationFilter(QOpenGLTexture::Linear);
-	texture->setWrapMode(QOpenGLTexture::Repeat);
+	diffuseMap = new QOpenGLTexture(textureImg);
+	diffuseMap->setMinificationFilter(QOpenGLTexture::Nearest);
+	diffuseMap->setMinificationFilter(QOpenGLTexture::Linear);
+	diffuseMap->setWrapMode(QOpenGLTexture::Repeat);
+
+	if (material->isNormalMapUsed()) {
+		QImage normalMapImg = material->normalMap().mirrored();
+		normalMap = new QOpenGLTexture(normalMapImg);
+		normalMap->setMinificationFilter(QOpenGLTexture::Nearest);
+		normalMap->setMinificationFilter(QOpenGLTexture::Linear);
+		normalMap->setWrapMode(QOpenGLTexture::Repeat);
+	}
 }
 
 void SimpleObject3D::draw(QOpenGLShaderProgram* shaderProgram, QOpenGLFunctions* functions)
@@ -76,8 +84,13 @@ void SimpleObject3D::draw(QOpenGLShaderProgram* shaderProgram, QOpenGLFunctions*
 	if (!vertexBuffer.isCreated() || !indexBuffer.isCreated()) {
 		return;
 	}
-	texture->bind(0);
-	shaderProgram->setUniformValue("u_texture", 0);
+	diffuseMap->bind(0);
+	shaderProgram->setUniformValue("u_diffuseMap", 0);
+
+	if (material->isNormalMapUsed()) {
+		normalMap->bind(1);
+		shaderProgram->setUniformValue("u_normalMap", 1);
+	}
 
 	QMatrix4x4 matrixProjection;
 	matrixProjection.setToIdentity();
@@ -92,6 +105,7 @@ void SimpleObject3D::draw(QOpenGLShaderProgram* shaderProgram, QOpenGLFunctions*
 	shaderProgram->setUniformValue("u_materialProperty.specularColor", material->specularColor());
 	shaderProgram->setUniformValue("u_materialProperty.shinnes", material->shinnes());
 	shaderProgram->setUniformValue("u_isUsingDiffuseMap", material->isDiffMapUsed());
+	shaderProgram->setUniformValue("u_isUsingNormalMap", material->isNormalMapUsed());
 
 	vertexBuffer.bind();
 
@@ -112,26 +126,41 @@ void SimpleObject3D::draw(QOpenGLShaderProgram* shaderProgram, QOpenGLFunctions*
 	shaderProgram->enableAttributeArray(normalLoc);
 	shaderProgram->setAttributeBuffer(normalLoc, GL_FLOAT, offset, 3, sizeof(VertexData));
 
+	offset += sizeof(QVector3D);
+
+	int tangentLoc = shaderProgram->attributeLocation("a_tangent");
+	shaderProgram->enableAttributeArray(tangentLoc);
+	shaderProgram->setAttributeBuffer(tangentLoc, GL_FLOAT, offset, 3, sizeof(VertexData));
+
+	offset += sizeof(QVector3D);
+
+	int bitangentLoc = shaderProgram->attributeLocation("a_bitangent");
+	shaderProgram->enableAttributeArray(bitangentLoc);
+	shaderProgram->setAttributeBuffer(bitangentLoc, GL_FLOAT, offset, 3, sizeof(VertexData));
+
 	indexBuffer.bind();
-	//if (listIndexeModes.size() > 1) {
-	//	for (IndexesMode indMode : listIndexeModes) {
-	//		functions->glDrawArrays(indMode.mode, indMode.indexes[0], indMode.indexes.size());
-	//	}
-	//}
-	//else {
-	//	functions->glDrawArrays(listIndexeModes[0].mode, listIndexeModes[0].indexes[0], listIndexeModes[0].indexes.size());
-	//	//functions->glDrawElements(listIndexeModes[0].mode, indexBuffer.size(), GL_UNSIGNED_INT, 0);
-	//}
+	if (listIndexeModes.size() > 1) {
+		for (IndexesMode indMode : listIndexeModes) {
+			functions->glDrawArrays(indMode.mode, indMode.indexes[0], indMode.indexes.size());
+		}
+	}
+	else {
+		//functions->glDrawArrays(listIndexeModes[0].mode, listIndexeModes[0].indexes[0], listIndexeModes[0].indexes.size());
+		functions->glDrawElements(listIndexeModes[0].mode, indexBuffer.size(), GL_UNSIGNED_INT, 0);
+	}
 
 	/*for (IndexesMode indMode : listIndexeModes) {
 		functions->glDrawArrays(indMode.mode, indMode.indexes[0], indMode.indexes.size());
 	}*/
-	functions->glDrawArrays(GL_TRIANGLES, 0, indexBuffer.size());
+	//functions->glDrawArrays(GL_TRIANGLES, 0, indexBuffer.size());
 	//functions->glDrawElements(GL_TRIANGLES, indexBuffer.size(), GL_UNSIGNED_INT, 0);
 
 	vertexBuffer.release();
 	indexBuffer.release();
-	texture->release();
+	diffuseMap->release();
+	if (material->isNormalMapUsed()) {
+		normalMap->release();
+	}
 }
 
 void SimpleObject3D::translate(const QVector3D& t)
