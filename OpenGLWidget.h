@@ -10,6 +10,7 @@
 #include <QOpenGLFunctions>
 #include <QMatrix4x4>
 #include <QBasicTimer>
+#include <QOpenGLFramebufferObject>
 
 #include "models/VertexData.h"
 
@@ -49,8 +50,12 @@ private:
 
     QString pathToShaders;
     QMatrix4x4 matrixProjection;
+    QMatrix4x4 lightMatrixProjection;
+    QMatrix4x4 lightMatrix;
+    QMatrix4x4 shadowLightMatrix;
     QOpenGLShaderProgram defShaderProgram;
     QOpenGLShaderProgram skyboxShaderProgram;
+    QOpenGLShaderProgram depthShaderProgram;
     QVector2D mousePosition;
     QVector<ObjectEngine3D*> objects;
     QVector<Transformational*> transformObjects;
@@ -58,6 +63,13 @@ private:
     QBasicTimer timer;
     Camera3D* camera;
     SkyBox* skybox;
+
+    QOpenGLFramebufferObject* depthBuffer;
+    quint32 frameBuffHeight = 1024;
+    quint32 frameBuffWidth = 1024;
+
+    float lightRotateX = 30;
+    float lightRotateY = 40;
 };
 
 #endif // OPENGLWIDGET_H

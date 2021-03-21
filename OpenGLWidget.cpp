@@ -16,6 +16,17 @@ OpenGLWidget::OpenGLWidget(QWidget* parent) : QOpenGLWidget(parent)
     pathToShaders = qApp->applicationDirPath() + "/shaders";
     camera = new Camera3D;
     camera->translate(QVector3D(0.0f, 0.0f, -5.0f));
+
+    lightMatrixProjection.setToIdentity();
+    lightMatrixProjection.ortho(-40, 40, -40, 40, -40, 40); // free to play here
+
+    shadowLightMatrix.setToIdentity();
+    shadowLightMatrix.rotate(lightRotateX, 1.0f, 0.0f, 0.0f);
+    shadowLightMatrix.rotate(lightRotateY, 0.0f, 1.0f, 0.0f);
+
+    lightMatrix.setToIdentity();
+    lightMatrix.rotate(-lightRotateY, 0.0f, 1.0f, 0.0f);
+    lightMatrix.rotate(-lightRotateX, 1.0f, 0.0f, 0.0f);
 }
 OpenGLWidget::~OpenGLWidget()
 {
@@ -52,6 +63,7 @@ void OpenGLWidget::initializeGL()
     objects[objects.size() - 1]->loadObjectFromFile("E:/SweetDreams/3dModels/fbx/45-cottage/Cottage_FREE2.obj");
     transformObjects.append(objects[objects.size() - 1]);
     skybox = new SkyBox(2000, QImage("E:/Downloads/skybox.png"));
+    depthBuffer = new QOpenGLFramebufferObject(frameBuffWidth, frameBuffHeight, QOpenGLFramebufferObject::Depth);
     timer.start(30, this);
 }
 void OpenGLWidget::resizeGL(int w, int h)
@@ -62,6 +74,28 @@ void OpenGLWidget::resizeGL(int w, int h)
 }
 void OpenGLWidget::paintGL()
 {
+    // rendering to frame buffer
+    depthBuffer->bind();
+    glViewport(0, 0, frameBuffWidth, frameBuffHeight);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    depthShaderProgram.bind();
+    depthShaderProgram.setUniformValue("u_projectionLightMatrix", lightMatrixProjection);
+    depthShaderProgram.setUniformValue("u_shadowLightMatrix", shadowLightMatrix);
+
+    for (int i = 0; i < transformObjects.size(); i++) {
+        transformObjects[i]->draw(&depthShaderProgram, context()->functions());
+    }
+    depthShaderProgram.release();
+    depthBuffer->release();
+
+    GLuint textureId = depthBuffer->texture();
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, textureId);
+
+
+    // rendering to screen
+    glViewport(0, 0, width(), height());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     skyboxShaderProgram.bind();
@@ -72,8 +106,12 @@ void OpenGLWidget::paintGL()
     skyboxShaderProgram.release();
 
     defShaderProgram.bind();
+    defShaderProgram.setUniformValue("u_shadowMap", GL_TEXTURE4 - GL_TEXTURE0);
     defShaderProgram.setUniformValue("u_projectionMatrix", matrixProjection);
-    defShaderProgram.setUniformValue("u_lightPosition", QVector4D(0.0, 0.0, 0.0, 1.0));
+    defShaderProgram.setUniformValue("u_lightDirection", QVector4D(0.0, 0.0, -1.0, 0.0));
+    defShaderProgram.setUniformValue("u_projectionLightMatrix", lightMatrixProjection);
+    defShaderProgram.setUniformValue("u_shadowLightMatrix", shadowLightMatrix);
+    defShaderProgram.setUniformValue("u_lightMatrix", lightMatrix);
     defShaderProgram.setUniformValue("u_lightPower", 2.0f);
 
     camera->draw(&defShaderProgram);
@@ -99,15 +137,27 @@ void OpenGLWidget::setupShaders()
     }
 
     if (!skyboxShaderProgram.addShaderFromSourceFile(QOpenGLShader::Vertex, pathToShaders + "/skybox.vsh")) {
-        qDebug() << "Error loading default.vert shader\n";
+        qDebug() << "Error loading skybox.vert shader\n";
         Q_ASSERT(nullptr);
     }
     if (!skyboxShaderProgram.addShaderFromSourceFile(QOpenGLShader::Fragment, pathToShaders + "/skybox.fsh")) {
-        qDebug() << "Error loading default.frag shader\n";
+        qDebug() << "Error loading skybox.frag shader\n";
         Q_ASSERT(nullptr);
     }
     if (!skyboxShaderProgram.link()) {
-        qDebug() << "Error Linking Default Shader\n";
+        qDebug() << "Error Linking Skybox Shader\n";
+    }
+
+    if (!depthShaderProgram.addShaderFromSourceFile(QOpenGLShader::Vertex, pathToShaders + "/depth.vsh")) {
+        qDebug() << "Error loading depth.vert shader\n";
+        Q_ASSERT(nullptr);
+    }
+    if (!depthShaderProgram.addShaderFromSourceFile(QOpenGLShader::Fragment, pathToShaders + "/depth.fsh")) {
+        qDebug() << "Error loading depth.frag shader\n";
+        Q_ASSERT(nullptr);
+    }
+    if (!depthShaderProgram.link()) {
+        qDebug() << "Error Linking Depth Shader\n";
     }
 }
 
